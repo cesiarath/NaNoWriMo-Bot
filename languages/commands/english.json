@@ -1,10 +1,16 @@
 {
+    "prefix": "!",
     "mynameis": "!mynameis",
     "mywords": "!mywords",
     "words": "!words",
     "sprint": "!sprint",
     "wordcount": "!wordcount",
     "cheer": "!cheer",
+    "ganbatte": "!ganbatte",
     "prompt": "!prompt",
-    "help": "!help"
+    "help": "!help",
+    "addproject": "!addproject",
+	  "updateproject": "!updateproject",
+	  "checkproject": "!checkproject",
+	  "closeproject": "!closeproject"
 }

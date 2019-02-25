@@ -23,9 +23,13 @@
     "NanoNotStartedYet": "NaNoWriMo hasn't started yet.",
     "NanoOver": "NaNoWriMo is over. See you next year! :D",
     "todayWordcount": "The wordcount for today is ",
-    "cheeringMessage": "You can do it! https://38.media.tumblr.com/91599091501f182b0fbffab90e115895/tumblr_nq2o6lc0Kp1s7widdo1_250.gif",
+    "ganbatte1": "You can do it! https://cdn.glitch.com/8ac2adf6-7cc5-46f2-abb8-c3729e2e664e%2Fryohei_fans.gif?1535963965486",
+    "cheering1": "YAY!!! https://cdn.glitch.com/8ac2adf6-7cc5-46f2-abb8-c3729e2e664e%2Fouran_poppers.gif?1535965707225",
     "showPrompt": "Your prompt is: ",
     "whoDaBest": "You da best!",
     "stopWhoDaBest": "Stop asking me who is the best! :angry:",
-    "helpMessage": "Hi! My name is Omlabot!\nHere is my command list:\n`!help`: To know my command list.\n`!sprint xx`: To start a sprint, where `xx` is the sprint length in minutes.\n`!wordcount`: To know the wordcount to achieve for today.\n`!prompt`: To get a random writing prompt.\n`!my name is xx`: So I know your NaNoWriMo username (replace xx with the username).\n`!my words`: To know how many words you have entered on the NaNoWriMo website.\n`!words xx`: Know the wordcount of another NaNoWriMo user (replace xx with their username).\n`!cheer`: To cheer you up.\n`Who da best?`: To know who's the best :) \nEnjoy!"
+    "helpMessage": "Hi! My name is Jakoby!\nHere is my command list:\n`!help`: To know my command list.\n`!sprint xx`: To start a sprint, where `xx` is the sprint length in minutes.\n`!wordcount`: To know the wordcount to achieve for today.\n`!prompt`: To get a random writing prompt.\n`!my name is xx`: So I know your NaNoWriMo username (replace xx with the username).\n`!my words`: To know how many words you have entered on the NaNoWriMo website.\n`!words xx`: Know the wordcount of another NaNoWriMo user (replace xx with their username).\n`!cheer`: To cheer for you.\n`!ganbatte`: Encouragement to stick with it or to try harder.\n`Who da best?`: To know who's the best :) \n`!addproject PROJECT_NAME WORDCOUNT`: To add a project and its wordcount. \n`!updateproject PROJECT_NAME WORDCOUNT`: To update a project's wordcount. \n`!checkproject PROJECT_NAME`: To check a project's stats. \n`!closeproject PROJECT_NAME`: To close the specified project. No updates can be made to it afterwards.  \nEnjoy!",
+    "kamikorosu": "https://cdn.glitch.com/8ac2adf6-7cc5-46f2-abb8-c3729e2e664e%2Fkami_korosu.gif?1532845135170",
+    "zoidberg1": "https://cdn.glitch.com/8ac2adf6-7cc5-46f2-abb8-c3729e2e664e%2Fzoidberg_hooray.gif?1551056982184",
+    "zoidberg2": "https://cdn.glitch.com/8ac2adf6-7cc5-46f2-abb8-c3729e2e664e%2Fzoidberg_slinky.gif?1551056982534"
 }

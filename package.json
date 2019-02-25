@@ -1,0 +1,17 @@
+{
+  "name": "NaNoWriMo-Bot",
+  "version": "0.0.1",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^11.3.2",
+    "xml2js": "^0.4.19",
+    "express": "^4.16.3",
+    "sqlite": "^2.9.2"
+  },
+  "engines": {
+    "node": "8.x"
+  }
+}

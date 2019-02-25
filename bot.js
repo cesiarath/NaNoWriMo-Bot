@@ -2,10 +2,26 @@ const fs = require('fs')
 const https = require('https');
 const parseString = require('xml2js').parseString;
 const Discord = require('discord.js');
-const auth = require('./auth.json');
 const prompts = require('./prompts.json');
 const userDb = require('./users/users.json');
+const sql = require("sqlite");
+sql.open(".data/projects.sqlite");
+
+const express = require('express');
+const app = express();
+app.get("/", (request, response) => {
+  console.log(Date.now() + " Ping Received");
+  response.sendStatus(200);
+});
+app.listen(8080);
+setInterval(() => {
+  https.get('https://nanowrimo-bot.glitch.me/');
+}, 270000);
+
 const client = new Discord.Client();
+
+// TODO: Create SQL table: projects
+// columns: userId TEXT, project TEXT, wordcount INTEGER, isOpen INTEGER
 
 const nanoWords = [1667, 3333, 5000, 6667, 8333, 10000, 11667, 13333, 15000, 16667, 18333, 20000, 21667, 23333, 25000, 26667, 28333, 30000, 31667, 33333, 35000, 36667, 38333, 40000, 41667, 43333, 45000, 46667, 48333, 50000];
 
@@ -14,12 +30,12 @@ String.prototype.replaceAll = function (search, replacement) {
     return target.replace(new RegExp(search, 'g'), replacement);
 };
 
-if (auth.language.endsWith(".json")) {
+if (process.env.LANGUAGE.endsWith(".json")) {
     language = language.substring(0, str.length - 5);
 }
 
 try {
-    var lang = require('./languages/' + auth.language.toLowerCase() + '.json');
+    var lang = require('./languages/' + process.env.LANGUAGE.toLowerCase() + '.json');
 }
 catch (e) {
     try {
@@ -32,7 +48,7 @@ catch (e) {
 }
 
 try {
-    var commands = require('./languages/commands/' + auth.language.toLowerCase() + '.json');
+    var commands = require('./languages/commands/' + process.env.LANGUAGE.toLowerCase() + '.json');
 }
 catch (e) {
     try {
@@ -101,7 +117,7 @@ function getNaNoWordcount(user) {
     return new Promise(function (resolve, reject) {
         urlToCall = "https://nanowrimo.org/wordcount_api/wc/" + user
         let req = https.request(urlToCall, res => {
-            if (auth.debug == 1) {
+            if (process.env.DEBUG == 1) {
                 console.log('statusCode:', res.statusCode);
             }
             res.on('data', (d) => {
@@ -124,8 +140,22 @@ function getNaNoWordcount(user) {
     });
 }
 
+function isEven(n) {
+   return n % 2 == 0;
+}
+
+function isOdd(n) {
+   return Math.abs(n % 2) == 1;
+}
+
 // register users
 client.on('message', message => {
+  
+    const args = message.content.trim().split(/ +/g);
+    const cmd = args.shift().toLowerCase();
+  
+    if (message.author.bot) return; // ignore bots
+    if (message.channel.type === "dm") return; // ignore DM channels
 
     function sprintEnded() {
         message.channel.send(lang.sprintEnd);
@@ -137,7 +167,7 @@ client.on('message', message => {
         var minutesRemainingInTotal = min - ((x - 1) * 5) // A bit of math to calculate the right amount of time left
         setTimeout(function () {
             message.channel.send(lang.remainingSprintTime + minutesRemainingInTotal + lang.remainingSprintTime2);
-        }, x * 5000 * auth.debug); // 5000 for seconds (testing purposes), 300000 for minutes
+        }, x * 5000 * process.env.DEBUG); // 5000 for seconds (testing purposes), 300000 for minutes
     }
 
     function startSprintDelay(length) {
@@ -151,7 +181,7 @@ client.on('message', message => {
 
     function startSprint(length) {
         message.channel.send(lang.startSprint + sprintTimeDemanded + lang.startSprint2);
-        setTimeout(sprintEnded, length * 1000 * auth.debug) // 60000 is for minutes, 1000 is for seconds (testing purposes)
+        setTimeout(sprintEnded, length * 1000 * process.env.DEBUG) // 60000 is for minutes, 1000 is for seconds (testing purposes)
         var minutesLeftToSprint = sprintTimeDemanded - 5;
         for (var x = 1, ln = length / 5; x < ln; x++ , minutesLeftToSprint - 5) {
             sendRemainingSprintTime(x, minutesLeftToSprint);
@@ -287,10 +317,25 @@ client.on('message', message => {
             }
         }
     }
+  
+    function rndCheer() {
+      // var int = Math.floor(Math.random() * (0 - 10)) + 10;
+      // if(isEven(int)) {
+        message.channel.send(lang.cheering1);
+      // }
+      // else {
+      //   message.channel.send(lang.cheering2);
+      // }
+    }
 
     // Cheer! :cheer:
     if (message.content == commands.cheer) {
-        message.channel.send(lang.cheeringMessage);
+        rndCheer();
+    }
+  
+    // Ganbatte!
+    if (message.content == commands.ganbatte) {
+       message.channel.send(lang.ganbatte1); 
     }
 
     // Prompts
@@ -317,11 +362,185 @@ client.on('message', message => {
         message.channel.send("All Hail the Glow Cloud");
         logMessage("All Hail the Glow Cloud", "");
     }
+  
+    // kamikorosu
+    if (message.content.includes("kamikorosu")) {
+        message.channel.send(lang.kamikorosu);
+        logMessage("bit someone to death.", message.author.username);
+    }
+  
+    function zoidberg() {
+      var int = Math.floor(Math.random() * (0 - 10)) + 10;
+      if(isEven(int)) {
+        message.channel.send(lang.zoidberg1);
+      }
+      else {
+        message.channel.send(lang.zoidberg2);
+      }
+    }
+  
+    if (message.content.includes("why not zoidberg")) {
+        zoidberg();
+    }
+  
+    function addUpdateProj(act, userid, proj, wdc) {
+		if(act == 1) {  // add project
+			sql.get('SELECT * FROM projects WHERE userId = "${userid}" AND project = "${proj}').then(row => {
+				if (!row) { // can't find the row
+					sql.run("INSERT INTO projects (userId, project, wordcount, isOpen) VALUES (?, ?, ?, ?)", [userid, proj, wdc, 1]);
+				} else { // can find row
+					message.channel.send(message.author.username + ", a project named '" + proj + "' already exists. Try updating it instead.");
+				}
+			}).catch(() => {
+			console.error; // log error
+				sql.run("CREATE TABLE IF NOT EXISTS projects (userId TEXT, project TEXT, wordcount INTEGER, isOpen INTEGER)").then(() => {
+					sql.run("INSERT INTO projects (userId, project, wordcount, isOpen) VALUES (?, ?, ?, ?)", [userid, proj, wdc, 1]);
+				});
+			});
+		} else if(act == 2) {  // update project
+			var oldwc = -1;
+			sql.get('SELECT * FROM projects WHERE userId = "${userid}" AND project = "${proj}"').then(row => {
+				if (!row) { // can't find the row
+					message.channel.send("Sorry, " + message.author.username + ", no project named '" + proj + "' was found. Try creating it instead.");
+				} else { // can find row
+					if(row.isOpen == 1) {
+						oldwc = row.wordcount;
+						sql.run('UPDATE projects SET wordcount = ${wdc} WHERE userId = ${userid} AND project = ${proj}');
+						return oldwc;
+					} else {
+						return -2;
+					}
+				}
+				}).catch(() => {
+					console.error; // log error
+					message.channel.send("An error occurred. Unable to fulfill request.");
+					return oldwc;
+				});
+		} else if(act == 3) {  // check project
+			sql.get('SELECT * FROM projects WHERE userId = "${userid}" AND project = "${proj}"').then(row => {
+				if (!row) { // can't find row
+					message.channel.send("Sorry, " + message.author.username + ", no project named '" + proj + "' was found. Try creating it instead.");
+					return -1;
+				} else { // found row
+					var result = [row.project, row.wordcount, row.isOpen];
+					return result;
+				}
+			});
+		} else if(act == 4) { // close project
+			sql.get('SELECT * FROM projects WHERE userId = "${userid}" AND project = "${proj}').then(row => {
+				if (!row) { // can't find row
+					message.channel.send("Sorry, " + message.author.username + ", no project named '" + proj + "' was found.");
+				} else { // found row
+					sql.run('UPDATE projects SET isOpen = 0 WHERE userId = ${userid}');
+					message.channel.send(message.author.username + ", project named '" + proj + "' has been closed. No further updates can be made to it.");
+				}
+			});
+		} else {
+			message.channel.send("An error occurred. Unable to fulfill request.");
+			return -1;
+		}
+    }
+	
+	function addProject(userid, proj, wdc) {
+		sql.get('SELECT * FROM projects WHERE userId = "${userid}" AND project = "${proj}').then(row => {
+			if (!row) { // can't find the row
+				sql.run("INSERT INTO projects (userId, project, wordcount, isOpen) VALUES (?, ?, ?, ?)", [userid, proj, wdc, 1]);
+				var msg = message.author.username + " added project '" + args[0] + "' with a wordcount of " + args[1] + ".";
+				message.channel.send(msg);
+			} else { // row found
+				message.channel.send(message.author.username + ", a project named '" + proj + "' already exists. Try updating it instead.");
+			}
+		}).catch(() => {
+		console.error; // log error
+			// TODO:  will be created earlier in code.  need to determine what to do in this catch. probably just throw an exception and let user know
+			sql.run("CREATE TABLE IF NOT EXISTS projects (userId TEXT, project TEXT, wordcount INTEGER, isOpen INTEGER)").then(() => {
+				sql.run("INSERT INTO projects (userId, project, wordcount, isOpen) VALUES (?, ?, ?, ?)", [userid, proj, wdc, 1]);
+			});
+		});
+	}
+	
+    if(cmd == commands.addproject) {
+		addProject(message.author.id, args[0], args[1]);
+		//if(er != -1) {
+		//	var msg = message.author.username + " added project '" + args[0] + "' with a wordcount of " + args[1] + ".";
+		//	message.channel.send(msg);
+		//}
+    }
+	
+	function updateProject(userid, proj, wdc) {
+		var oldwc = -1;
+		var msg = "";
+		sql.get('SELECT * FROM projects WHERE userId = "${userid}" AND project = "${proj}"').then(row => {
+			if (!row) { // can't find the row
+				message.channel.send("Sorry, " + message.author.username + ", no project named '" + proj + "' was found. Try creating it instead.");
+			} else { // can find row
+				if(row.isOpen == 1) {
+					oldwc = row.wordcount;
+					sql.run('UPDATE projects SET wordcount = ${wdc} WHERE userId = ${userid} AND project = ${proj}');
+					msg = message.author.username + "updated their project!\nProject: " + proj + "\nOld Wordcount: " + oldwc + "\nNew Wordcount: " + wdc;
+				} else {
+					var msg = message.author.username + ", project '" + proj + "' is already closed and cannot be updated.";
+				}
+				message.channel.send(msg);
+			}
+		}).catch(() => {
+			console.error; // log error
+			message.channel.send("An error occurred. Unable to fulfill request.");
+		});
+	}
+	
+	if(cmd == commands.updateproject) {
+		updateProject(message.author.id, args[0], args[1]);
+		/*if(oldwc >= 0) {
+			var msg = message.author.username + "updated their project!\nProject: " + args[0] + "\nOld Wordcount: " + oldwc + "\nNew Wordcount: " + args[1];
+			message.channel.send(msg);
+		} else if (oldwc == -2) {
+			var msg = message.author.username + ", project '" + args[0] + "' is already closed and cannot be updated.";
+			message.channel.send(msg);
+		} */
+	}
+	
+	function checkProject(userid, proj) {
+		sql.get('SELECT * FROM projects WHERE userId = "${userid}" AND project = "${proj}"').then(row => {
+			if (!row) { // can't find row
+				message.channel.send("Sorry, " + message.author.username + ", no project named '" + proj + "' was found. Try creating it instead.");
+			} else { // found row
+				//var result = [${row.project}, ${row.wordcount}, ${row.isOpen}];  // TODO: find proper way to retrieve value from row
+				var state = (row.isOpen == 0) ? "closed" : "open";
+				var msg = "User: " + message.author.username + "\nProject: " + row.project + "\nWordcount: " + row.wordcount + "\nState: " + state;
+				message.channel.send(msg);
+			}
+		});
+	}
+	
+	if(cmd == commands.checkproject) {
+		checkProject(message.author.id, args[0], 0);
+		/*if(result != -1) {
+			var state = (result[2] == 0) ? "closed" : "open";
+			var msg = "User: " + message.author.username + "\nProject: " + result[0] + "\nWordcount: " + result[1] + "\nState: " + state;
+			message.channel.send(msg);
+		} */
+	}
+	
+	function closeProject(userid, proj) {
+		sql.get('SELECT * FROM projects WHERE userId = "${userid}" AND project = "${proj}').then(row => {
+			if (!row) { // can't find row
+				message.channel.send("Sorry, " + message.author.username + ", no project named '" + proj + "' was found.");
+			} else { // found row
+				sql.run('UPDATE projects SET isOpen = 0 WHERE userId = ${userid}');
+				message.channel.send(message.author.username + ", project named '" + proj + "' has been closed. No further updates can be made to it.");
+			}
+		});
+	}
+	
+	if(cmd == commands.closeproject) {
+		closeProject(message.author.id, args[0]);
+	}
 });
 
 // Client token, required for the bot to work
 try {
-    client.login(auth.token);
+    client.login(process.env.TOKEN);
 }
 catch (e) {
     console.log("ERROR: No account was linked to your bot. Please provide a valid authentication token. You can change it in the auth.json file.")
